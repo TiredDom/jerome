@@ -1,0 +1,45 @@
+services:
+  - type: web
+    name: serviq
+    runtime: docker
+    plan: free
+    branch: main
+    healthCheckPath: /
+    envVars:
+      - key: APP_NAME
+        value: ServiQ
+      - key: APP_ENV
+        value: production
+      - key: APP_KEY
+        generateValue: true
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_URL
+        sync: false
+      - key: LOG_CHANNEL
+        value: stack
+      - key: LOG_LEVEL
+        value: error
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+    buildCommand: |
+      composer install --optimize-autoloader --no-dev
+      npm ci
+      npm run build
+      mkdir -p database
+      touch database/database.sqlite
+      chmod 777 database/database.sqlite
+      chmod 777 database
+      mkdir -p storage/framework/{sessions,views,cache}
+      mkdir -p storage/logs
+      mkdir -p bootstrap/cache
+      chmod -R 777 storage bootstrap/cache
+      php artisan migrate --force || true
+      php artisan db:seed --force || true
+    startCommand: bash start.sh
